@@ -1,0 +1,30 @@
+import re
+
+def extract_china_numbers(text):
+    """
+    Extracts valid Chinese mobile numbers:
+    - 11 digits starting with 13-19 (e.g., 13812345678)
+    - +86 followed by 11 digits starting with 13-19 (e.g., +8613812345678)
+    """
+    # Regex breakdown:
+    # (?:\+86)?  -> Optionally matches +86 at the start
+    # 1[3-9]     -> Starts with 1 followed by 3-9 (13 to 19 range)
+    # \d{9}      -> Exactly 9 more digits (making 11 total digits)
+    pattern = r'(?:\+86)?1[3-9]\d{9}\b'
+    
+    matches = re.findall(pattern, text)
+    return matches
+
+if __name__ == "__main__":
+    print("--- China Phone Number Extractor ---")
+    print("Paste your text below (Press Enter to process):\n")
+    
+    user_input = input("> ")
+    results = extract_china_numbers(user_input)
+    
+    print("\n--- Extracted Numbers Found ---")
+    if results:
+        for num in results:
+            print(f"✔ Found: {num}")
+    else:
+        print("❌ No valid Chinese numbers found.")
