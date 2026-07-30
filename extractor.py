@@ -2,16 +2,34 @@ import re
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-# --- Extraction Logic (Duplicates Removed) ---
+# --- Super-Reliable Extraction Engine ---
 def extract_china_numbers(text):
-    # Matches +8613xxxxxxxxx or 13xxxxxxxxx (starts with 13-19)
-    pattern = r'(?:\+86)?1[3-9]\d{9}\b'
+    # Strategy: Find any 11-digit block starting with 13-19, with optional +86 prefix
+    # Matches: +8613812345678 or 13812345678 or +86 13812345678
+    pattern = r'(?:\+?86[\s\-]*)?(1[3-9]\d{9})'
+    
     matches = re.findall(pattern, text)
     
-    # Remove duplicates while preserving original order
-    return list(dict.fromkeys(matches))
+    results = []
+    for num in matches:
+        # Reconstruct standard format based on whether user inputted +86
+        # If you want +86 kept when present, we check original text matches:
+        results.append(num)
 
-# --- Button Functions ---
+    # If you want to keep +86 prefixes when present in the original text:
+    full_pattern = r'(\+86)?[\s\-]*1[3-9]\d{9}'
+    raw_matches = re.finditer(full_pattern, text)
+    
+    final_numbers = []
+    for match in raw_matches:
+        # Clean internal spaces or dashes
+        clean_num = re.sub(r'[\s\-]', '', match.group(0))
+        final_numbers.append(clean_num)
+
+    # Remove duplicates while keeping original order
+    return list(dict.fromkeys(final_numbers))
+
+# --- UI Button Functions ---
 def paste_text():
     try:
         text_box.delete("1.0", tk.END)
@@ -35,7 +53,7 @@ def process_text():
     if numbers:
         for num in numbers:
             result_box.insert(tk.END, f"{num}\n")
-        results_label.config(text=f"Results ({len(numbers)} Unique Numbers Found)")
+        results_label.config(text=f"Results ({len(numbers)} Numbers Found)")
     else:
         results_label.config(text="Results (0 Numbers Found)")
 
@@ -50,26 +68,29 @@ def export_file():
         messagebox.showwarning("Export Failed", "No extracted numbers to save!")
         return
     
-    file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text File", "*.txt"), ("CSV File", "*.csv")])
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".txt", 
+        filetypes=[("Text File", "*.txt"), ("CSV File", "*.csv")]
+    )
     if file_path:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
         messagebox.showinfo("Success", "Numbers exported successfully!")
 
-# --- UI Setup ---
+# --- Graphical User Interface (GUI) ---
 root = tk.Tk()
 root.title("China Number Extractor")
 root.geometry("650x550")
 root.configure(bg="#0c0d1a")
 
-# Styling Colors
+# Color Theme Configuration
 BG_DARK = "#0c0d1a"
 CARD_BG = "#131527"
 TEXT_COLOR = "#ffffff"
 BTN_BG = "#1b1e36"
 BTN_TEXT = "#ffffff"
 
-# Header Banner
+# Title Header Banner
 header_frame = tk.Frame(root, bg=CARD_BG, pady=15)
 header_frame.pack(fill="x", padx=20, pady=(15, 10))
 
@@ -82,7 +103,7 @@ header_title = tk.Label(
 )
 header_title.pack()
 
-# Toolbar Buttons
+# Navigation Toolbar
 toolbar = tk.Frame(root, bg=BG_DARK)
 toolbar.pack(fill="x", padx=20, pady=5)
 
@@ -99,13 +120,12 @@ create_btn(toolbar, "🔍 Extract", process_text).pack(side="left", padx=5)
 create_btn(toolbar, "🗑 Clear", clear_all).pack(side="left", padx=5)
 create_btn(toolbar, "💾 Export", export_file).pack(side="left", padx=5)
 
-# Enter Text Section
+# Input Section
 tk.Label(root, text="Enter Text", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg=BG_DARK).pack(anchor="w", padx=20, pady=(10, 2))
 text_box = tk.Text(root, height=7, bg=CARD_BG, fg="#a0a5c0", insertbackground="white", bd=0, padx=10, pady=10, font=("Consolas", 10))
 text_box.pack(fill="x", padx=20)
-text_box.insert("1.0", "Paste your text here...")
 
-# Results Section
+# Output Results Section
 results_label = tk.Label(root, text="Results (0 Numbers Found)", font=("Segoe UI", 10, "bold"), fg=TEXT_COLOR, bg=BG_DARK)
 results_label.pack(anchor="w", padx=20, pady=(15, 2))
 
